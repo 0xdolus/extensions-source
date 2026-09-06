@@ -19,6 +19,8 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import kotlin.time.Instant
 
+private const val PAGE_LIMIT = 24
+
 @Source
 abstract class Doujiva : KeiSource() {
 
@@ -196,5 +198,4 @@ abstract class Doujiva : KeiSource() {
         return null
     }
 
-    private const val PAGE_LIMIT = 24
 }
