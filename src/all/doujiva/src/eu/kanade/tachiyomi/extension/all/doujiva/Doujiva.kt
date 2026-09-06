@@ -196,7 +196,7 @@ abstract class Doujiva : KeiSource() {
         return null
     }
 
-    companion object {
+    companion object Constants {
         private const val PAGE_LIMIT = 24
     }
 }
