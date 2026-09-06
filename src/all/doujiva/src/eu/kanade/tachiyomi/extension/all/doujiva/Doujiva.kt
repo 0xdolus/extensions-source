@@ -196,5 +196,4 @@ abstract class Doujiva : KeiSource() {
         }
         return null
     }
-
 }
