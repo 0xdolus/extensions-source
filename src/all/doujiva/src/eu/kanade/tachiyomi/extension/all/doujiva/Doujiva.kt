@@ -185,7 +185,9 @@ abstract class Doujiva : KeiSource() {
                 chapter.title?.takeIf { it.isNotBlank() }?.let { append(" - $it") }
             }
             chapter_number = chapter.number
-            date_upload = Instant.tryParse(chapter.createdAt)
+            date_upload = runCatching {
+                Instant.parse(chapter.createdAt)
+            }.getOrNull()
         }
     }
 
