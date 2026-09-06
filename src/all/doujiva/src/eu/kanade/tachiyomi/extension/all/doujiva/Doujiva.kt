@@ -171,8 +171,7 @@ abstract class Doujiva : KeiSource() {
         return parts.joinToString("\n").ifBlank { null }
     }
 
-    private fun MangaDto.toSChapterList(): List<SChapter> {
-        return chapters.map { chapter ->
+    private fun MangaDto.toSChapterList(): List<SChapter> = chapters.map { chapter ->
             SChapter.create().apply {
                 url = "/manga/$slug/read/${chapter.id}"
                 memo = buildJsonObject {
