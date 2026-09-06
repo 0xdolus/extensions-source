@@ -174,19 +174,18 @@ abstract class Doujiva : KeiSource() {
     }
 
     private fun MangaDto.toSChapterList(): List<SChapter> = chapters.map { chapter ->
-            SChapter.create().apply {
-                url = "/manga/$slug/read/${chapter.id}"
-                memo = buildJsonObject {
-                    put("slug", slug)
-                    put("number", chapter.number)
-                }
-                name = buildString {
-                    append("Chapter ${chapter.number.toString().removeSuffix(".0")}")
-                    chapter.title?.takeIf { it.isNotBlank() }?.let { append(" - $it") }
-                }
-                chapter_number = chapter.number
-                date_upload = Instant.tryParse(chapter.createdAt)
+        SChapter.create().apply {
+            url = "/manga/$slug/read/${chapter.id}"
+            memo = buildJsonObject {
+                put("slug", slug)
+                put("number", chapter.number)
             }
+            name = buildString {
+                append("Chapter ${chapter.number.toString().removeSuffix(".0")}")
+                chapter.title?.takeIf { it.isNotBlank() }?.let { append(" - $it") }
+            }
+            chapter_number = chapter.number
+            date_upload = Instant.tryParse(chapter.createdAt)
         }
     }
 
