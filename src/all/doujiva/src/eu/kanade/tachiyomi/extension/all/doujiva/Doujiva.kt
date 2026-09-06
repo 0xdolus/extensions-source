@@ -25,7 +25,7 @@ abstract class Doujiva : KeiSource() {
     private val apiUrl get() = "$baseUrl/api/v1"
 
     // Stay well under the observed 100 req/min API budget.
-    override fun OkHttpClient.Builder.configureClient(): OkHttpClient.Builder = rateLimit(2) { !it.encodedPath.contains("/thumbnail/path/change/me/") }
+    override fun OkHttpClient.Builder.configureClient(): OkHttpClient.Builder = rateLimit(2) { it.host != "cdn.doujiva.com" }
 
     // ============================== Popular ==============================
 
@@ -61,7 +61,7 @@ abstract class Doujiva : KeiSource() {
     // ============================== Details ==============================
 
     override suspend fun getMangaByUrl(url: HttpUrl): SManga? {
-        val slug = slugFromHttpUrl(url) ?: return null
+        val slug = slugFromUrl(url) ?: return null
         return fetchMangaDto(slug)?.toSMangaOrNull()?.apply { initialized = true }
     }
 
@@ -71,14 +71,13 @@ abstract class Doujiva : KeiSource() {
         fetchDetails: Boolean,
         fetchChapters: Boolean,
     ): SMangaUpdate {
-        val slug = slugFromMangaUrl(manga.url)
+        val slug = slugFromUrl("$baseUrl${manga.url}".toHttpUrl())
             ?: throw Exception("Cannot resolve Doujiva manga from url: ${manga.url}")
 
         val dto = fetchMangaDto(slug)
             ?: throw Exception("Doujiva manga not found: $slug")
 
         val details = dto.toSMangaOrNull()?.apply {
-            initialized = true
             // Keep the relative URL already stored by the list/search entry.
             url = manga.url
         } ?: manga
@@ -91,7 +90,7 @@ abstract class Doujiva : KeiSource() {
     // =============================== Pages ===============================
 
     override suspend fun getPageList(chapter: SChapter): List<Page> {
-        val chapterId = chapter.url.substringAfterLast('/').substringBefore('?')
+        val chapterId = chapter.url.toHttpUrl().pathSegments.last()
         val slug = chapter.memo["slug"]?.jsonPrimitive?.content
             ?: throw Exception("Missing Doujiva manga slug for chapter: ${chapter.url}")
 
@@ -173,47 +172,30 @@ abstract class Doujiva : KeiSource() {
     }
 
     private fun MangaDto.toSChapterList(): List<SChapter> {
-        if (chapters.isEmpty()) {
-            return emptyList()
-        }
-
         return chapters.map { chapter ->
             SChapter.create().apply {
                 url = "/manga/$slug/read/${chapter.id}"
                 memo = buildJsonObject {
                     put("slug", slug)
-                    put("number", chapter.number.toString())
+                    put("number", chapter.number)
                 }
                 name = buildString {
-                    append("Chapter ${chapter.number.toChapterLabel()}")
+                    append("Chapter ${chapter.number.toString().removeSuffix(".0")}")
                     chapter.title?.takeIf { it.isNotBlank() }?.let { append(" - $it") }
                 }
                 chapter_number = chapter.number
-                date_upload = chapter.createdAt.toEpochMillis()
+                date_upload = Instant.tryParse(chapter.createdAt)
             }
         }
     }
 
-    private fun slugFromMangaUrl(mangaUrl: String): String? {
-        val path = mangaUrl.removePrefix(baseUrl).substringBefore('?').trim('/')
-        val segments = path.split('/').filter { it.isNotEmpty() }
-        if (segments.size >= 2 && segments[0] == "manga") {
-            return segments[1]
-        }
-        return null
-    }
-
-    private fun slugFromHttpUrl(url: HttpUrl): String? {
+    private fun slugFromUrl(url: HttpUrl): String? {
         val segments = url.pathSegments.filter { it.isNotBlank() }
         if (segments.size >= 2 && segments[0] == "manga") {
             return segments[1]
         }
         return null
     }
-
-    private fun Float.toChapterLabel(): String = if (this % 1f == 0f) toInt().toString() else toString()
-
-    private fun String?.toEpochMillis(): Long = this?.let { Instant.parseOrNull(it)?.toEpochMilliseconds() } ?: 0L
 
     companion object {
         private const val PAGE_LIMIT = 24

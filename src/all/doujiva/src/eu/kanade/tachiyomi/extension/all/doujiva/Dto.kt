@@ -29,7 +29,6 @@ class Meta(
 
 @Serializable
 class MangaDto(
-    val id: String,
     val slug: String,
     val title: String,
     val description: String? = null,
@@ -52,9 +51,8 @@ class TagDto(
 @Serializable
 class ChapterDto(
     val id: String,
-    val number: Float = 1f,
+    val number: Float,
     val title: String? = null,
-    val pageCount: Int = 0,
     val createdAt: String? = null,
 )
 
